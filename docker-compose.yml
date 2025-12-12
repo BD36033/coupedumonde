@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # 1. Base de Données MySQL
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_main_db
+    ports:
+      - "3306:3306"
+    environment:
+      # Variables de connexion communes
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: trd_db
+      MYSQL_USER: trd_user
+      MYSQL_PASSWORD: trd_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - trd_network
+
+  # 2. Interface de Gestion de la Base de Données
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_gui
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql_db
+      MYSQL_ROOT_PASSWORD: root_password
+    depends_on:
+      - mysql_db
+    networks:
+      - trd_network
+
+  # 3. Message Broker (Communication Asynchrone)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_broker
+    ports:
+      - "5672:5672"  
+      - "15672:15672" 
+    networks:
+      - trd_network
+
+  # --- Les quatre Microservices (Tous en NestJS) ---
+
+  # 4. Service de Pari (Cœur)
+  betting_service:
+    build:
+    # Contient le code NestJS
+      context: ./betting-service
+    image: trd-betting-service
+    container_name: betting_service
+    ports:
+      - "8081:3000"
+    environment:
+      DB_HOST: mysql_db
+      DB_NAME: trd_db
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on:
+      - mysql_db
+      - rabbitmq
+    networks:
+      - trd_network
+
+  # 5. Service de Cotes
+  odds_service:
+    build:
+    # Contient le code NestJS
+      context: ./odds-service
+    image: trd-odds-service
+    container_name: odds_service
+    ports:
+      - "8082:3000"
+    environment:
+      DB_HOST: mysql_db
+      DB_NAME: trd_db
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on:
+      - mysql_db
+      - rabbitmq
+    networks:
+      - trd_network
+
+  # 6. Service Financier/Wallet
+  wallet_service:
+    build:
+    # Contient le code NestJS
+      context: ./wallet-service
+    image: trd-wallet-service
+    container_name: wallet_service
+    ports:
+      - "8083:3000"
+    environment:
+      DB_HOST: mysql_db
+      DB_NAME: trd_db
+      RABBITMQ_URL: amqp://rabbitmq
+    depends_on:
+      - mysql_db
+      - rabbitmq
+    networks:
+      - trd_network
+  
+  # 7. Service Utilisateur/Auth
+  user_auth_service:
+    build:
+    # Contient le code NestJS
+      context: ./user-auth-service 
+    image: trd-user-auth-service
+    container_name: user_auth_service
+    ports:
+      - "8084:3000"
+    environment:
+      DB_HOST: mysql_db
+      DB_NAME: trd_db
+    depends_on:
+      - mysql_db
+    networks:
+      - trd_network
+
+volumes:
+  mysql_data:
+
+networks:
+  trd_network:
+    driver: bridge
