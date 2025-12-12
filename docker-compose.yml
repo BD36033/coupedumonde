@@ -41,6 +41,23 @@ services:
     networks:
       - trd_network
 
+# API Gateway pour point dnetree unique 
+  api_gateway:
+    build:
+      context: ./api-gateway
+    image: trd-api-gateway
+    container_name: api_gateway
+    ports:
+      - "9000:30" #ca c'est ce qui lie au port 30 expose par la gateway dans dockerfile et nginx.conf
+    depends_on:
+      - betting_service
+      - odds_service
+      - wallet_service
+      - user_auth_service
+    networks:
+      - trd_network
+
+
   # --- Les quatre Microservices (Tous en NestJS) ---
 
   # 4. Service de Pari (Cœur)
@@ -50,8 +67,9 @@ services:
       context: ./betting-service
     image: trd-betting-service
     container_name: betting_service
-    ports:
-      - "8081:3000"
+    #on expose 3000 et plus le sport 80 a l'exterieur
+    expose:
+      - "3000"
     environment:
       DB_HOST: mysql_db
       DB_NAME: trd_db
@@ -69,8 +87,8 @@ services:
       context: ./odds-service
     image: trd-odds-service
     container_name: odds_service
-    ports:
-      - "8082:3000"
+    expose:
+      - "3000"
     environment:
       DB_HOST: mysql_db
       DB_NAME: trd_db
@@ -88,8 +106,8 @@ services:
       context: ./wallet-service
     image: trd-wallet-service
     container_name: wallet_service
-    ports:
-      - "8083:3000"
+    expose:
+      - "3000"
     environment:
       DB_HOST: mysql_db
       DB_NAME: trd_db
@@ -107,8 +125,8 @@ services:
       context: ./user-auth-service 
     image: trd-user-auth-service
     container_name: user_auth_service
-    ports:
-      - "8084:3000"
+    expose:
+      - "3000"
     environment:
       DB_HOST: mysql_db
       DB_NAME: trd_db
