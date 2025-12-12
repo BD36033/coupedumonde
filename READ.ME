@@ -1,0 +1,10 @@
+Notion :
+Conteneur : En microservice les service sont séparés dans plusieurs conteneur tout monte via une image dockerfile indépendante ce qui permet une flexibilité sur ceux ci.
+
+Gateway : la gateway sert à empêcher des appels exterieur sur le même port utiliser en interne par les services,
+au lieu d’avoir les port 8081 8082 etc exposer on a le client qui interagit avec le port 9000 qui lui communique avec la gateway qui elle communique avec le microservice.
+Les microservices entre eux passent par le port 3000 configuré dans le serveur nginx.conf ou ils tournent.
+
+Broker : le broker RabbitMQ sert à communiquer entre la requête cliente et le service, il permet qu’en cas de problème les requêtes attentent au lieu d'avoir un retour d’erreur.
+Il permet à ce qu’il n’y ai pas de blocage d’un service “enfant” si l'un des services parents plante.
+Exemple si le service odds plante le service betting ouest continuer de fonctionner même si celui a besoin de ce service “enfant” pour obtenir les cotes
